@@ -50,9 +50,14 @@ class GeodesicTerritorySolver:
         shape = myo_mask.shape
 
         # initialize the distances with infinity
-        dist_map = np.full(shape, np.inf, dtype=np.float32)   # to check: size of variables (flaot32 and int16 might not be necessary)
-        label_map = np.zeros(shape, dtype=np.int16)
+        dist_out = np.full(shape, np.inf, dtype=np.float32)
+        dist_in = np.full(shape, np.inf, dtype=np.float32)
+        
+        labels_out = np.zeros(shape, dtype=np.int16)
+        labels_in = np.zeros(shape, dtype=np.int16)
 
+        # Priority Queue: (Distance, State, Z, Y, X)
+        # State 0 = Outside, State 1 = Inside
         pq = [] # priority queue for Dijkstra algorithm (Distance, State, Z, Y, X)
 
 
@@ -66,49 +71,70 @@ class GeodesicTerritorySolver:
             z, y, x = int(z), int(y), int(x)
             label = int(seed_labels[z, y, x])
 
-            dist_map[z, y, x] = 0.0         # the distance to the artery is 0 (the voxel is in the artery)
-            label_map[z, y, x] = label      # assigns the corresponding label (e.g. LAD = 1, etc.)
+            dist_out[z, y, x] = 0.0
+            labels_out[z, y, x] = label
+            heapq.heappush(pq, (0.0, 0, z, y, x))
+
+            # If seed is ALSO physically inside the mask, initialize Inside State immediately
+            if myo_mask[z, y, x]:
+                dist_in[z, y, x] = 0.0
+                labels_in[z, y, x] = label
+                heapq.heappush(pq, (0.0, 1, z, y, x))
 
         
         # step 2: run Dijkstra
         while pq:
             d, state, z, y, x = heapq.heappop(pq)
 
-            if d > dist_map[z, y, x]:  # there is already a shorter path
-                continue
+            # Optimization: Check against the CORRECT distance map
+            if state == 0:
+                if d > dist_out[z, y, x]: continue
+                curr_label = labels_out[z, y, x]
+            else:
+                if d > dist_in[z, y, x]: continue
+                curr_label = labels_in[z, y, x]
 
-            current_label = label_map[z, y, x]
-
-            # check all 26 neighbors
+            # Check neighbors
             for dz, dy, dx, edge_len in self.neighbors:
-                nz, ny, nx = z + dz, y + dy, x + dx    # nz, ny, nx are the coordinates of the neighbor voxels
+                nz, ny, nx = z + dz, y + dy, x + dx
 
-                # don't go off the image
+                # Bounds check
                 if not (0 <= nz < shape[0] and 0 <= ny < shape[1] and 0 <= nx < shape[2]):
                     continue
-
-                new_dist = d + edge_len
-                is_neighbor_myo = myo_mask[nz, ny, nx]
-
-
-                # Case A: we are outside of myo
-                if state == 0:
-                    if new_dist < dist_map[nz, ny, nx]:
-                        dist_map [nz, ny, nx] = new_dist
-                        label_map[nz, ny, nx] = current_label
-
-                        new_state = 1 if is_neighbor_myo else 0
-                        heapq.heappush(pq, (new_dist, new_state, nz, ny, nx))
                 
-                # Case B: we are inside of myo
-                elif state == 1:
-                    if is_neighbor_myo:
-                        if new_dist < dist_map[nz, ny, nx]:
-                            dist_map [nz, ny, nx] = new_dist
-                            label_map[nz, ny, nx] = current_label
+                new_dist = d + edge_len
+                is_myo = myo_mask[nz, ny, nx]
+
+                if state == 0:
+                    # Logic for OUTSIDE
+                    # 1. Try to walk to another Outside voxel
+                    if new_dist < dist_out[nz, ny, nx]:
+                        dist_out[nz, ny, nx] = new_dist
+                        labels_out[nz, ny, nx] = curr_label
+                        heapq.heappush(pq, (new_dist, 0, nz, ny, nx))
+                    
+                    # 2. Try to ENTER the Myocardium (state 0 -> 1)
+                    if is_myo:
+                        # We compare against dist_IN here
+                        if new_dist < dist_in[nz, ny, nx]:
+                            dist_in[nz, ny, nx] = new_dist
+                            labels_in[nz, ny, nx] = curr_label
                             heapq.heappush(pq, (new_dist, 1, nz, ny, nx))
+
+                elif state == 1:
+                    # Logic for INSIDE
+                    if is_myo:
+                        if new_dist < dist_in[nz, ny, nx]:
+                            dist_in[nz, ny, nx] = new_dist
+                            labels_in[nz, ny, nx] = curr_label
+                            heapq.heappush(pq, (new_dist, 1, nz, ny, nx))
+
+        # Return the INSIDE labels (that's what we care about for stats)
+        # We fill any unreached myocardium with 0
+        final_labels = labels_in
+        final_dists = dist_in
         
-        return label_map, dist_map
+        return final_labels, final_dists
 
 
 

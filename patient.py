@@ -84,8 +84,7 @@ class PatientCase:
         
         # ----------Run the solver------------
         # Convert spacing to (z, y, x) order for numpy
-        spacing_zyx = (self.spacing[2], self.spacing[1, self.spacing[0]])
-
+        spacing_zyx = (self.spacing[2], self.spacing[1], self.spacing[0])
         solver = GeodesicTerritorySolver(spacing_zyx)
 
         myo_mask_bool = (self.myo_np > 0)

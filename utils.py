@@ -87,7 +87,7 @@ def rasterize_centerline(ref_image: sitk.Image, pts_mm: np.ndarray, radius_mm: f
         kernelRadius = rad_vox,
         kernelType=sitk.sitkBall,
         foregroundValue=1,
-        backgroundvalue=0
+        backgroundValue=0
     )
-    
+
     return thick_tube
