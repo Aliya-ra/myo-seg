@@ -2,6 +2,7 @@ import math
 import heapq
 import numpy as np
 from typing import Tuple, List
+from tqdm import tqdm
 
 class GeodesicTerritorySolver:
     """
@@ -82,6 +83,13 @@ class GeodesicTerritorySolver:
                 heapq.heappush(pq, (0.0, 1, z, y, x))
 
         
+
+        # Progress bar using tqdm
+        total_myo_voxels = np.count_nonzero(myo_mask)
+        pbar = tqdm(total=total_myo_voxels, desc="  Computing Territories", unit="vox", mininterval=0.5, leave=False)
+        finalized_count = 0
+
+
         # step 2: run Dijkstra
         while pq:
             d, state, z, y, x = heapq.heappop(pq)
@@ -93,6 +101,9 @@ class GeodesicTerritorySolver:
             else:
                 if d > dist_in[z, y, x]: continue
                 curr_label = labels_in[z, y, x]
+
+
+                pbar.update(1)
 
             # Check neighbors
             for dz, dy, dx, edge_len in self.neighbors:
@@ -113,7 +124,7 @@ class GeodesicTerritorySolver:
                         labels_out[nz, ny, nx] = curr_label
                         heapq.heappush(pq, (new_dist, 0, nz, ny, nx))
                     
-                    # 2. Try to ENTER the Myocardium (state 0 -> 1)
+                    # 2. Try to enter the Myocardium (state 0 -> 1)
                     if is_myo:
                         # We compare against dist_IN here
                         if new_dist < dist_in[nz, ny, nx]:
@@ -129,10 +140,11 @@ class GeodesicTerritorySolver:
                             labels_in[nz, ny, nx] = curr_label
                             heapq.heappush(pq, (new_dist, 1, nz, ny, nx))
 
-        # Return the INSIDE labels (that's what we care about for stats)
-        # We fill any unreached myocardium with 0
+        # Return the inside labels
+        # fill any unreached myocardium with 0
         final_labels = labels_in
         final_dists = dist_in
+        pbar.close()
         
         return final_labels, final_dists
 

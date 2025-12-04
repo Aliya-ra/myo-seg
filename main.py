@@ -2,6 +2,7 @@ import config
 from patient import PatientCase
 import pandas as pd
 import traceback
+from tqdm import tqdm
 
 def main():
 
@@ -21,7 +22,7 @@ def main():
 
 
 
-    for p_dir in patient_dirs:
+    for p_dir in tqdm(patient_dirs, desc="Overall Progress", unit="patient"):
         case_id = p_dir.name
         print(f"Processing {case_id}...")
 
