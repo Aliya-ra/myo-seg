@@ -1,7 +1,8 @@
 from pathlib import Path
 
 # File Constants
-ROOT_DIR = Path("CT_DATA")
+# ROOT_DIR = Path("CT_DATA")
+ROOT_DIR = Path("temp")
 MHD_PATTERN = "*.mhd"
 IMG_FOLDER = "image_data_mhd"
 MASK_FOLDER = "segmentation_mask"

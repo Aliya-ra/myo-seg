@@ -6,6 +6,7 @@ from typing import Dict, Optional
 import config
 import utils
 from solver import GeodesicTerritorySolver
+from skimage_solver import GeodesicTerritorySolver as gs
 
 class PatientCase:
     
@@ -85,7 +86,7 @@ class PatientCase:
         # ----------Run the solver------------
         # Convert spacing to (z, y, x) order for numpy
         spacing_zyx = (self.spacing[2], self.spacing[1], self.spacing[0])
-        solver = GeodesicTerritorySolver(spacing_zyx)
+        solver = gs(spacing_zyx)
 
         myo_mask_bool = (self.myo_np > 0)
 
@@ -148,7 +149,7 @@ class PatientCase:
         out_img = sitk.GetImageFromArray(combined.astype(np.uint8))
         out_img.CopyInformation(self.myo)
         
-        save_path = self.case_dir / "territories_final.mhd"
+        save_path = self.case_dir / "territories_final_watershed.mhd"
         sitk.WriteImage(out_img, str(save_path))
         print(f"  [Saved] {save_path}")
 

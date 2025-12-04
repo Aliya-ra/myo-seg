@@ -57,12 +57,11 @@ class GeodesicTerritorySolver:
         labels_out = np.zeros(shape, dtype=np.int16)
         labels_in = np.zeros(shape, dtype=np.int16)
 
-        # Priority Queue: (Distance, State, Z, Y, X)
         # State 0 = Outside, State 1 = Inside
         pq = [] # priority queue for Dijkstra algorithm (Distance, State, Z, Y, X)
 
 
-        # ------- Main Algo --------
+        # Main Algo --------
         # step 1: find all the voxels that are part of an artery
         seed_indices = np.argwhere(seed_labels > 0)
 

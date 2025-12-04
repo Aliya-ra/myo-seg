@@ -24,7 +24,7 @@ def main():
 
     for p_dir in tqdm(patient_dirs, desc="Overall Progress", unit="patient"):
         case_id = p_dir.name
-        print(f"Processing {case_id}...")
+        print(f"\n Processing {case_id}...")
 
         try:
 
