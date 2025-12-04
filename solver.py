@@ -104,6 +104,11 @@ class GeodesicTerritorySolver:
 
 
                 pbar.update(1)
+                finalized_count += 1
+
+
+                if finalized_count >= total_myo_voxels:
+                    break
 
             # Check neighbors
             for dz, dy, dx, edge_len in self.neighbors:
